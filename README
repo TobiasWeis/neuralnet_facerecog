@@ -1,8 +1,16 @@
-NN_Tobi_Mariam_Mirror.py is a runnable executable, the ipynb is the ipython notebook
+NN_Tobi_Mariam_Mirror.py is a runnable executable, 
+the ipynb are the ipython notebooks for visualization
 
-before running executable, do:
-sudo modprobe nvidia_uvm
-sudo modprobe nvidia
+~/.theanorc:
+[global]
+device=gpu
+floatX=float32
+allow_gc=True 
 
-then run it, the GPU-implementation of theano will run approx. 3-4 times faster than CPU
+[nvcc]
+fastmath = True
 
+[cuda]
+root=/usr/local/cuda-7.5/
+
+allow_gc has to be True in my case, otherwise the model does not fit in the GPU
