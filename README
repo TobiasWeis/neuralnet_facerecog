@@ -1,6 +1,16 @@
 NN_Tobi_Mariam_Mirror.py is a runnable executable, 
 the ipynb are the ipython notebooks for visualization
 
+This code uses Theano and Lasagne to recognize faces in front of a smartmirror.
+Faces are detected using OpenCVs Haarcascade classifier.
+
+General workflow for training and setup:
+
+PIR motion sensor -> start Facedumper.py -> save face-images to disk
+
+get face-images -> classify with existing net -> put into preliminary folders -> manual inspection, move to GT folders -> retrain
+
+
 ~/.theanorc:
 [global]
 device=gpu
