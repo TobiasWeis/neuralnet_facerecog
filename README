@@ -1,0 +1,8 @@
+NN_Tobi_Mariam_Mirror.py is a runnable executable, the ipynb is the ipython notebook
+
+before running executable, do:
+sudo modprobe nvidia_uvm
+sudo modprobe nvidia
+
+then run it, the GPU-implementation of theano will run approx. 3-4 times faster than CPU
+
