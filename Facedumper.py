@@ -7,6 +7,14 @@ from datetime import datetime
 import threading
 import time
 
+import cv2
+import lasagne
+from lasagne import layers
+from lasagne.updates import nesterov_momentum
+from nolearn.lasagne import NeuralNet
+
+from settings import *
+
 class Facedumper(object):
     def __init__(self):
         self.shouldRun = True
@@ -14,6 +22,10 @@ class Facedumper(object):
         self.w = 800 
         self.h = 600
         self.device = "/dev/videoc920"
+        self.s = Settings()
+        self.net = self.s.net
+        self.net.load_weights_from(self.s.net_name)
+        self.outfile = "/var/www/smartmirror2/assets/faceimg.png"
 
         self.folder = "/home/sarah/scripts/faces_%d" % self.exposure
         if not os.path.isdir(self.folder):
@@ -72,9 +84,30 @@ class Facedumper(object):
                 for (x, y, w, h) in faces:
                     # save patch
                     d = datetime.now()
-                    cv2.imwrite("%s/face_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), frame[y:y+h, x:x+w,:])
+                    patch = frame[y:y+h, x:x+w,:]
+                    cv2.imwrite("%s/face_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), patch)
                     cv2.imwrite("%s/complete_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), frame)
                     self.last_saved = time.time()
+
+                    # classify, draw rectangle with name
+                    img = cv2.resize(patch / 255., (self.s.img_size, self.s.img_size))
+                    img = img.transpose(2,0,1).reshape(3, self.s.img_size, self.s.img_size)
+                    pred = self.net.predict(np.array([img.astype(np.float32)]))
+
+                    if pred[0] == 0: # Tobi
+                        col = (255,0,0)
+                    elif pred[0] == 1: # Mariam
+                        col = (255,0,255)
+                    elif pred[0] == 2: # Other
+                        col = (128,128,128)
+                    elif pred[0] == 3:
+                        col = (0,0,255)                                                                                            
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    cv2.rectangle(frame, (x,y), (x+w,y+h),col,2)
+                    cv2.putText(frame,self.s.labels[pred[0]],(x,y-10), font, 1,col,2)
+                    cv2.imwrite(self.outfile, frame)
+                    print "Written to: ", self.outfile
+
 
             cv2.waitKey(35)
 
