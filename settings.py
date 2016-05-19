@@ -5,7 +5,7 @@ from lasagne.updates import nesterov_momentum
 
 class Settings():
     def __init__(self):
-        self.img_size = 25
+        self.img_size = 17
         self.labels = ["Tobi", "Mariam", "Other", "Negative"]
         self.net_name = 'facerecognet'
         self.net = NeuralNet(
@@ -22,14 +22,14 @@ class Settings():
     # input layer
     input_shape=(None, 3,  self.img_size,  self.img_size),
     # layer conv2d1
-    conv2d1_num_filters=32,
+    conv2d1_num_filters=24,
     conv2d1_filter_size=(5, 5),
     conv2d1_nonlinearity=lasagne.nonlinearities.rectify,
     conv2d1_W=lasagne.init.GlorotUniform(),
     # layer maxpool1
     maxpool1_pool_size=(2, 2),
     # layer conv2d2
-    conv2d2_num_filters=32,
+    conv2d2_num_filters=24,
     conv2d2_filter_size=(5, 5),
     conv2d2_nonlinearity=lasagne.nonlinearities.rectify,
     # layer maxpool2
@@ -43,12 +43,12 @@ class Settings():
     dropout2_p=0.5,
     # output
     output_nonlinearity=lasagne.nonlinearities.softmax,
-    output_num_units=5,
+    output_num_units=4,
     # optimization method params
     update=nesterov_momentum,
     update_learning_rate=0.01,
     update_momentum=0.8,
-    max_epochs=300,
+    max_epochs=500,
     verbose=1,
     )
 

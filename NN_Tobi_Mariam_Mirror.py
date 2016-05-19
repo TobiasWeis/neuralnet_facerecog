@@ -22,6 +22,8 @@ _test = True  # perform teting?
 
 X_train,y_train,X_test,y_test  = load_faces(s)
 
+# FIXME: is it possible to do incremental training?
+
 print "# Got the data"
 
 net1 = s.net
