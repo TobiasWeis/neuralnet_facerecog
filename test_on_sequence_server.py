@@ -18,76 +18,23 @@ import StringIO
 import time
 from settings import *
 
-# FIXME: test for serving mjpg
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 from SocketServer import ThreadingMixIn
 
 
-global s
-s = Settings()
-
-cascPath = "./haarcascade_frontalface_alt.xml"
-global faceCascade
-faceCascade = cv2.CascadeClassifier(cascPath)
-
-global files
-files = glob.glob("./sequence/*.png")
-files.sort()
-
-global net
-net = s.net
-net.load_weights_from(s.net_name)
-
-
 class CamHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        global s
-        global faceCascade
-        global files
-        global net
         if self.path.endswith('.mjpg'):
             self.send_response(200)
             self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
             self.end_headers()
             
-            font = cv2.FONT_HERSHEY_SIMPLEX
-
             while True:
                 try:
                     for f in files:
                         frame = cv2.imread(f)
-                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-                        # use cascade to detect faces
-                        faces = faceCascade.detectMultiScale(
-                            gray,
-                            scaleFactor=1.1,
-                            minNeighbors=5,
-                            minSize=(50, 50),
-                            flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-                        )
-
-                        for (x, y, w, h) in faces:
-                            patch = frame[y:y+h, x:x+w,:]
-                            # use neural net to classify face
-                            # transform to right format
-                            img = cv2.resize(patch / 255., (s.img_size, s.img_size))
-                            img = img.transpose(2,0,1).reshape(3, s.img_size, s.img_size)
-
-                            pred = net.predict(np.array([img.astype(np.float32)]))
-
-                            if pred[0] == 0: # Tobi
-                                col = (255,0,0)
-                            elif pred[0] == 1: # Mariam
-                                col = (255,0,255)
-                            elif pred[0] == 2: # Other
-                                col = (128,128,128)
-                            elif pred[0] == 3:
-                                col = (0,0,255)
-
-                            cv2.rectangle(frame, (x,y), (x+w,y+h),col,2)
-                            cv2.putText(frame,s.labels[pred[0]],(x,y-10), font, 1,col,2)
-                            cv2.imshow("frame", frame)
+                        # Do some processing here!
 
                         r,buf = cv2.imencode('.jpg', frame)
 
