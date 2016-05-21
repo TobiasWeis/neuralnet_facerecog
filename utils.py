@@ -54,6 +54,12 @@ def load_faces(s, rgb=True):
                 y_test = np.append(y_test, i)   
 
         print "Got %d train and %d test files for label %s" % (cnt_train, cnt_test, s.labels[i])
+
+        # save to disk for later
+        np.save("X_train", X_train)
+        np.save("X_test", X_test)
+        np.save("y_train", y_train.astype(np.int32))
+        np.save("y_test", y_test.astype(np.int32))
     return X_train, y_train.astype(np.int32), X_test, y_test.astype(np.int32)
 
 def load_road_pictures(s):
