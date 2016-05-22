@@ -16,24 +16,32 @@ import glob
 
 from settings import *
 
-s = Settings()
 
-def get_and_resize_imgs():
-    X_test = np.empty((0,3, s.img_size, s.img_size),np.float32)# contains data
+def get_and_resize_imgs(rgb=True):
+    if rgb:
+        X_test = np.empty((0,3, s.img_size, s.img_size),np.float32)# contains data
+    else:
+        X_test = np.empty((0,1, s.img_size, s.img_size),np.float32)# contains data
 
     files = glob.glob("./faces_120/face_*.png") # that's were new, unclassified files are put
 
     for f in files:
-        img = cv2.resize(cv2.imread(f) / 255., (s.img_size, s.img_size))
-        img = img.transpose(2,0,1).reshape(3, s.img_size, s.img_size)
-        X_test = np.append(X_test, np.array([img.astype(np.float32)]), axis=0)
+        if rgb:
+            img = cv2.resize(cv2.imread(f) / 255., (s.img_size, s.img_size))
+            img = img.transpose(2,0,1).reshape(3, s.img_size, s.img_size)
+            X_test = np.append(X_test, np.array([img.astype(np.float32)]), axis=0)
+        else:
+            img = cv2.resize(cv2.cvtColor(cv2.imread(f), cv2.COLOR_BGR2GRAY) / 255., (s.img_size, s.img_size))
+            X_test = np.append(X_test, np.array([[img.astype(np.float32)]]), axis=0)
 
     return files, X_test
 
+s = Settings()
+s.createnet()
 net = s.net
 net.load_weights_from(s.net_name)
 
-fnames, X_test = get_and_resize_imgs()
+fnames, X_test = get_and_resize_imgs(rgb=False)
 preds = net.predict(X_test)
 
 print "Predictions:"

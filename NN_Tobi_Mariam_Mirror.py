@@ -19,8 +19,9 @@ s = Settings()
 
 _train = True # perform training?
 _test = True  # perform teting?
-_data_from_disk = True # use data from disk or compute from image folders
+_data_from_disk = False # use data from disk or compute from image folders
 
+'''
 if _data_from_disk:
     print "Loading traindata from disk"
     X_train = np.load("X_train.npy")
@@ -36,41 +37,47 @@ else:
         print "Loading grayscale training data"
         X_train,y_train,X_test,y_test  = load_faces(s, rgb=False)
 
+'''
+
 # FIXME: is it possible to do incremental training?
 
 print "# Got the data"
 
-net1 = s.net
+for img_size in [21]:
+    s.createnet(imgs=img_size)
+    net1 = s.net
 
-if _train:
-    print "# Training"
-    nn = net1.fit(X_train, y_train)
+    X_train,y_train,X_test,y_test  = load_faces(s, rgb=False)
 
-    print "# Saving weights"
-    net1.save_weights_to(s.net_name)
-if _test:
-    print "# Loading weights"
-    net1.load_weights_from(s.net_name)
+    if _train:
+        print "# Training"
+        nn = net1.fit(X_train, y_train)
 
-# evaluate
-print "# Evaluating"
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
-predictions = net1.predict(X_test)
+        print "# Saving weights"
+        net1.save_weights_to(s.net_name)
+    if _test:
+        print "# Loading weights"
+        net1.load_weights_from(s.net_name)
 
-####################### OUTPUT to shell and to file for later
-filename = "experiment_log.txt"
-target = open(filename, 'a+')
-target.write("-------------------------------------------------------------------------\n")
-from nolearn.lasagne import PrintLayerInfo
-pli = PrintLayerInfo()
-net1.verbose = 3
-layer_info, legend = pli._get_layer_info_conv(net1)
-target.write(layer_info)
-target.write(classification_report(y_test, predictions))
-#target.write(accuracy_score(y_test, predictions))
-target.close()
+    # evaluate
+    print "# Evaluating"
+    from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+    predictions = net1.predict(X_test)
 
-print layer_info
-print classification_report(y_test, predictions)
-accuracy_score(y_test, predictions)
+    ####################### OUTPUT to shell and to file for later
+    filename = "experiment_log.txt"
+    target = open(filename, 'a+')
+    target.write("-------------------------------------------------------------------------\n")
+    from nolearn.lasagne import PrintLayerInfo
+    pli = PrintLayerInfo()
+    net1.verbose = 3
+    layer_info, legend = pli._get_layer_info_conv(net1)
+    target.write(layer_info)
+    target.write(classification_report(y_test, predictions))
+    #target.write(accuracy_score(y_test, predictions))
+    target.close()
+
+    print layer_info
+    print classification_report(y_test, predictions)
+    accuracy_score(y_test, predictions)
 
