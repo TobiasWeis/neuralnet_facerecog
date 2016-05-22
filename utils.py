@@ -46,9 +46,6 @@ def load_faces(s, rgb=True):
             y_train = np.append(y_train, i)
         print "Got %d files for label %s" % (cnt, s.labels[i])
 
-
-
-
     # now, shuffle
     perm = np.arange(X_train.shape[0])
     np.random.shuffle(perm) # create a permutation, then use this for Data and Labels
@@ -60,15 +57,6 @@ def load_faces(s, rgb=True):
     y_test = y_train[0.8*y_train.shape[0]:]
     X_train = X_train[:0.8*X_train.shape[0]]
     y_train = y_train[:0.8*y_train.shape[0]]
-
-    # transform preprocessing (zero-mean, scaled variance)
-    # FIXME: does this work on rgb-data seamlessly?
-    from sklearn import preprocessing
-    from sklearn.externals import joblib
-    scaler = preprocessing.StandardScaler().fit(X_train)
-    joblib.dump(scaler, 'scaler.pkl') # save to disk for realtime transform later
-    scaler.transform(X_train)
-    scaler.transform(X_test)
 
     # save to disk for later
     np.save("X_train", X_train)
