@@ -37,7 +37,6 @@ def get_and_resize_imgs(rgb=True):
     return files, X_test
 
 s = Settings()
-s.createnet()
 net = s.net
 net.load_weights_from(s.net_name)
 

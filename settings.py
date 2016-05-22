@@ -8,7 +8,7 @@ class Settings():
         self.img_size = 21
         self.labels = ["Tobi", "Mariam", "Other", "Negative"]
         self.net_name = 'facerecognet'
-        self.net = self.createnet()
+        self.createnet()
 
     def createnet(self, imgs=21, nf1=16, nf2=16, fs=5):
         self.img_size = imgs
