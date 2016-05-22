@@ -21,10 +21,10 @@ class Facedumper(object):
         self.exposure = 120
         self.w = 800 
         self.h = 600
-        self.device = "/dev/videoc920"
+        self.device = "/dev/video0"
         self.s = Settings()
         self.net = self.s.net
-        self.net.load_weights_from(self.s.net_name)
+        self.net.load_weights_from("/home/sarah/scripts/" + self.s.net_name)
         self.outfile = "/var/www/smartmirror2/assets/faceimg.png"
 
         self.folder = "/home/sarah/scripts/faces_%d" % self.exposure
@@ -35,9 +35,17 @@ class Facedumper(object):
         self.faceCascade = cv2.CascadeClassifier(cascPath)
 
         self.video_capture = cv2.VideoCapture(0)
+        if not self.video_capture.isOpened():
+            print "#################################################"
+            print " Could not open camera !"
+            print "#################################################"
+            return
 
         self.video_capture.set(3, self.w)
         self.video_capture.set(4, self.h)
+
+        '''
+        # FIXME: these sometimes cause problems and driver shutdowns
 
         os.system("uvcdynctrl -d %s -s\"White Balance Temperature, Auto\" -- 0" % (self.device)) # white balance
         os.system("uvcdynctrl -d %s -s\"White Balance Temperature\" -- 4000" % (self.device)) # white balance
@@ -53,6 +61,7 @@ class Facedumper(object):
         for i in range(0,30):
             os.system("uvcdynctrl -d %s -s\"Exposure (Absolute)\" -- %d" % (self.device, self.exposure))
             ret, frame = self.video_capture.read()
+        '''
 
 
         self.last_saved = 0
@@ -64,52 +73,64 @@ class Facedumper(object):
         self.shouldRun = True
 
         while self.shouldRun:
+            '''
             os.system("uvcdynctrl -d %s -s\"Exposure (Absolute)\" -- %d" % (self.device, self.exposure))
+            '''
             # Capture frame-by-frame
             ret, frame = self.video_capture.read()
             # cam is mounted upside down
             frame = cv2.flip(frame,0)
+            try:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = self.faceCascade.detectMultiScale(
+                    gray,
+                    scaleFactor=1.1,
+                    minNeighbors=5,
+                    minSize=(50, 50),
+                    flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+                )
 
-            faces = self.faceCascade.detectMultiScale(
-                gray,
-                scaleFactor=1.1,
-                minNeighbors=5,
-                minSize=(50, 50),
-                flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-            )
+                if time.time() - self.last_saved > self.delay:
+                    for (x, y, w, h) in faces:
+                        # first, save patches to file
+                        d = datetime.now()
+                        patch = frame[y:y+h, x:x+w,:]
+                        cv2.imwrite("%s/face_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), patch)
+                        cv2.imwrite("%s/complete_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), frame)
+                        self.last_saved = time.time()
 
-            if time.time() - self.last_saved > self.delay:
-                for (x, y, w, h) in faces:
-                    # save patch
-                    d = datetime.now()
-                    patch = frame[y:y+h, x:x+w,:]
-                    cv2.imwrite("%s/face_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), patch)
-                    cv2.imwrite("%s/complete_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), frame)
-                    self.last_saved = time.time()
+                    # now draw the boxes for visualization
+                    for (x, y, w, h) in faces:
+                        patch = frame[y:y+h, x:x+w,:]
+                        # classify, draw rectangle with name,
+                        # save to file for the smartmirror to display it
+                        if self.s.net.input_shape[1] == 3:
+                            img = cv2.resize(patch / 255., (self.s.img_size, self.s.img_size))
+                            img = img.transpose(2,0,1).reshape(3, self.s.img_size, self.s.img_size)
+                            pred = self.net.predict(np.array([img.astype(np.float32)]))
+                        else:
+                            img = cv2.resize(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY) / 255., (self.s.img_size, self.s.img_size))
+                            pred = self.net.predict(np.array([[img.astype(np.float32)]]))
 
-                    # classify, draw rectangle with name
-                    img = cv2.resize(patch / 255., (self.s.img_size, self.s.img_size))
-                    img = img.transpose(2,0,1).reshape(3, self.s.img_size, self.s.img_size)
-                    pred = self.net.predict(np.array([img.astype(np.float32)]))
+                        if pred[0] == 0: # Tobi
+                            col = (255,0,0)
+                        elif pred[0] == 1: # Mariam
+                            col = (255,0,255)
+                        elif pred[0] == 2: # Other
+                            col = (128,128,128)
+                        elif pred[0] == 3:
+                            col = (0,0,255)                                                                                            
+                        font = cv2.FONT_HERSHEY_SIMPLEX
+                        cv2.rectangle(frame, (x,y), (x+w,y+h),col,4)
+                        cv2.putText(frame,self.s.labels[pred[0]],(x,y-10), font, 1,col,3)
+                        cv2.imwrite(self.outfile, frame)
+                        print "Written to: ", self.outfile
 
-                    if pred[0] == 0: # Tobi
-                        col = (255,0,0)
-                    elif pred[0] == 1: # Mariam
-                        col = (255,0,255)
-                    elif pred[0] == 2: # Other
-                        col = (128,128,128)
-                    elif pred[0] == 3:
-                        col = (0,0,255)                                                                                            
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    cv2.rectangle(frame, (x,y), (x+w,y+h),col,2)
-                    cv2.putText(frame,self.s.labels[pred[0]],(x,y-10), font, 1,col,2)
-                    cv2.imwrite(self.outfile, frame)
-                    print "Written to: ", self.outfile
-
-
-            cv2.waitKey(35)
+                cv2.waitKey(35)
+            except Exception,e:
+                print "Exception: ", e
+                pass
 
 
 
