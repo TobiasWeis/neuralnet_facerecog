@@ -5,12 +5,11 @@ from lasagne.updates import nesterov_momentum
 
 class Settings():
     def __init__(self):
-        self.img_size = 21
         self.labels = ["Tobi", "Mariam", "Other", "Negative"]
         self.net_name = 'facerecognet'
         self.createnet()
 
-    def createnet(self, imgs=21, nf1=16, nf2=16, fs=5):
+    def createnet(self, imgs=31, nf1=32, nf2=32, fs=5):
         self.img_size = imgs
         print "Settings: set image size to: ", imgs
         self.net = NeuralNet(
@@ -54,7 +53,7 @@ class Settings():
             update=nesterov_momentum,
             update_learning_rate=0.01,
             update_momentum=0.8,
-            max_epochs=700,
+            max_epochs=80,
             verbose=1,
             )
 
