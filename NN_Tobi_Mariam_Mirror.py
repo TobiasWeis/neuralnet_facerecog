@@ -43,7 +43,7 @@ else:
 
 print "# Got the data"
 
-for img_size in [31]:
+for img_size in [21]:
     s.createnet(imgs=img_size)
     net1 = s.net
 
