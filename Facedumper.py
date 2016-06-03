@@ -13,18 +13,29 @@ from lasagne import layers
 from lasagne.updates import nesterov_momentum
 from nolearn.lasagne import NeuralNet
 
-from settings import *
+import settings
+import settings_hotornot
 
-class Facedumper(object):
+import threading
+
+class Facedumper(threading.Thread):
     def __init__(self):
+        super(Facedumper, self).__init__()
+        self.stoprequest = threading.Event()
+
         self.shouldRun = True
         self.exposure = 120
         self.w = 800 
         self.h = 600
         self.device = "/dev/video0"
-        self.s = Settings()
+        self.s = settings.Settings()
         self.net = self.s.net
         self.net.load_weights_from("/home/sarah/scripts/" + self.s.net_name)
+
+        self.s_hotornot = settings_hotornot.Settings()
+        self.net_hotornot = self.s_hotornot.net
+        self.net_hotornot.load_weights_from("/home/sarah/scripts/" + self.s_hotornot.net_name)
+
         self.outfile = "/var/www/smartmirror2/assets/faceimg.png"
 
         self.folder = "/home/sarah/scripts/faces_%d" % self.exposure
@@ -67,12 +78,18 @@ class Facedumper(object):
         self.last_saved = 0
         self.delay = 1 # seconds in between saving frames
 
+    def __del__(self):
+        self.video_capture.release()
 
-    def capture(self):
+    def join(self, timeout=None):
+        self.stoprequest.set()
+        super(Facedumper, self).join(timeout)
+
+    def run(self):
         print "Starting capture!"
         self.shouldRun = True
 
-        while self.shouldRun:
+        while not self.stoprequest.isSet():
             '''
             os.system("uvcdynctrl -d %s -s\"Exposure (Absolute)\" -- %d" % (self.device, self.exposure))
             '''
@@ -112,6 +129,7 @@ class Facedumper(object):
                         else:
                             img = cv2.resize(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY) / 255., (self.s.img_size, self.s.img_size))
                             pred = self.net.predict(np.array([[img.astype(np.float32)]]))
+                            pred_hotornot = self.net_hotornot.predict(np.array([[img.astype(np.float32)]]))
 
                         if pred[0] == 0: # Tobi
                             col = (255,0,0)
@@ -124,6 +142,12 @@ class Facedumper(object):
                         font = cv2.FONT_HERSHEY_SIMPLEX
                         cv2.rectangle(frame, (x,y), (x+w,y+h),col,4)
                         cv2.putText(frame,self.s.labels[pred[0]],(x,y-10), font, 1,col,3)
+
+                        if pred_hotornot[0] == 0: #Hot
+                            cv2.putText(frame,self.s_notornet.labels[pred_hotornot[0]],(x,y-20), font, 1, (0,200,200),3)
+                            cv2.rectangle(frame, (x-10,y-10), (x+w+10,y+h+10),(0,200,200),8)
+
+
                         cv2.imwrite(self.outfile, frame)
                         print "Written to: ", self.outfile
 
