@@ -53,7 +53,7 @@ class Settings():
             update=nesterov_momentum,
             update_learning_rate=0.01,
             update_momentum=0.8,
-            max_epochs=80,
+            max_epochs=160,
             verbose=1,
             )
 
