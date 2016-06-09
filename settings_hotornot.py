@@ -9,7 +9,7 @@ class Settings():
         self.net_name = 'hotornotnet'
         self.createnet()
 
-    def createnet(self, imgs=11, nf1=16, nf2=16, fs=5):
+    def createnet(self, imgs=21, nf1=16, nf2=16, fs=5):
         self.img_size = imgs
         print "Settings: set image size to: ", imgs
         self.net = NeuralNet(
