@@ -84,6 +84,7 @@ class Facedumper(threading.Thread):
     def join(self, timeout=None):
         self.stoprequest.set()
         super(Facedumper, self).join(timeout)
+        self.video_capture.release()
 
     def run(self):
         print "Starting capture!"
@@ -113,8 +114,8 @@ class Facedumper(threading.Thread):
                         # first, save patches to file
                         d = datetime.now()
                         patch = frame[y:y+h, x:x+w,:]
-                        cv2.imwrite("%s/face_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), patch)
-                        cv2.imwrite("%s/complete_%d%d%d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), frame)
+                        cv2.imwrite("%s/face_%d%02d%02d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), patch)
+                        cv2.imwrite("%s/complete_%d%02d%02d-%02d%02d%02d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, (x + w/2), (y + h/2), w, h), frame)
                         self.last_saved = time.time()
 
                     # now draw the boxes for visualization
