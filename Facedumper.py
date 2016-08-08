@@ -96,20 +96,21 @@ class Facedumper(threading.Thread):
             '''
             # Capture frame-by-frame
             ret, frame = self.video_capture.read()
-            # cam is mounted upside down
-            frame = cv2.flip(frame,0)
             try:
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-                faces = self.faceCascade.detectMultiScale(
-                    gray,
-                    scaleFactor=1.1,
-                    minNeighbors=5,
-                    minSize=(50, 50),
-                    flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-                )
-
                 if time.time() - self.last_saved > self.delay:
+                    # cam is mounted upside down
+                    frame = cv2.flip(frame,0)
+
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+                    faces = self.faceCascade.detectMultiScale(
+                        gray,
+                        scaleFactor=1.1,
+                        minNeighbors=5,
+                        minSize=(50, 50),
+                        flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+                    )
+
                     for (x, y, w, h) in faces:
                         # first, save patches to file
                         d = datetime.now()
