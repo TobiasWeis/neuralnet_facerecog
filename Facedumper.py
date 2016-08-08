@@ -17,11 +17,15 @@ import settings
 import settings_hotornot
 
 import threading
+import shelve
 
 class Facedumper(threading.Thread):
     def __init__(self):
         super(Facedumper, self).__init__()
         self.stoprequest = threading.Event()
+
+        self.memory = shelve.open("memory")
+        self.switch = {}
 
         self.shouldRun = True
         self.exposure = 120
@@ -79,12 +83,29 @@ class Facedumper(threading.Thread):
         self.delay = 1 # seconds in between saving frames
 
     def __del__(self):
+        self.memory.close()
         self.video_capture.release()
 
     def join(self, timeout=None):
         self.stoprequest.set()
         super(Facedumper, self).join(timeout)
         self.video_capture.release()
+
+    def detect_faces(self, frame):
+        # cam is mounted upside down
+        frame = cv2.flip(frame,0)
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        faces = self.faceCascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(50, 50),
+            flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+        )
+        return faces
+
 
     def run(self):
         print "Starting capture!"
@@ -98,18 +119,7 @@ class Facedumper(threading.Thread):
             ret, frame = self.video_capture.read()
             try:
                 if time.time() - self.last_saved > self.delay:
-                    # cam is mounted upside down
-                    frame = cv2.flip(frame,0)
-
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-                    faces = self.faceCascade.detectMultiScale(
-                        gray,
-                        scaleFactor=1.1,
-                        minNeighbors=5,
-                        minSize=(50, 50),
-                        flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-                    )
+                    faces = self.detect_faces()
 
                     for (x, y, w, h) in faces:
                         # first, save patches to file
@@ -133,6 +143,20 @@ class Facedumper(threading.Thread):
                             pred = self.net.predict(np.array([[img.astype(np.float32)]]))
                             pred_hotornot = self.net_hotornot.predict(np.array([[img.astype(np.float32)]]))
 
+
+                        # check if there went some time by since we last saw that person.
+                        # if so, display a greeting!
+
+                        if self.memory.has_key(pred[0]):
+                            if time.time() - self.memory[pred[0]]["lastseen"] > 5*60:
+                                self.switch[pred[0]] = time.time()
+                            # save the last-seen timestamp for this person
+                            self.memory[pred[0]]["lastseen"] = time.time()
+                        else:
+                            self.memory[pred[0]] = {}
+                            self.memory[pred[0]]["lastseen"] = time.time()
+
+
                         if pred[0] == 0: # Tobi
                             col = (255,0,0)
                         elif pred[0] == 1: # Mariam
@@ -144,6 +168,10 @@ class Facedumper(threading.Thread):
                         font = cv2.FONT_HERSHEY_SIMPLEX
                         cv2.rectangle(frame, (x,y), (x+w,y+h),col,4)
                         cv2.putText(frame,self.s.labels[pred[0]],(x,y-10), font, 1,col,3)
+
+                        # display a greeting for 10 seconds
+                        if time.time() - self.switch[pred[0]] < 10:
+                            cv2.putText(frame, "LONG TIME NO SEE, %s" % (self.s.labels[pred[0]]),(10,50), font, 1, col,3)
 
                         if pred_hotornot[0] == 0: #Hot
                             cv2.putText(frame,self.s_notornet.labels[pred_hotornot[0]],(x,y-20), font, 1, (0,200,200),3)
