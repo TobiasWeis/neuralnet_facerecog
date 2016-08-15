@@ -23,6 +23,7 @@ folder = "./faces_120/"
 
 hours = {}
 days = {}
+widths = {}
 
 files = {}
 for label in s.labels:
@@ -49,6 +50,14 @@ for label in s.labels:
                 days[label] = {}
                 days[label][weekday] = []
                 days[label][weekday].append(hour)
+
+            #face_20160604-070415_xc181_yc171_w70_h70.png
+            w = f.split("_w")[1].split("_")[0]
+            h = f.split("_h")[1].split(".")[0]
+
+            if label not in widths.keys():
+                widths[label] = []
+            widths[label].append(int(w))
 
 
 # number of pics per label per hour
@@ -97,5 +106,15 @@ for i,label in enumerate(s.labels):
     #plt.colorbar()
     plt.title(label)
 
+
+# image sizes of face patches
+fig = plt.figure()
+plt.suptitle("Width distribution of labels")
+for i,label in enumerate(s.labels):
+    fig.add_subplot(1, len(s.labels), i+1)
+    plt.hist(widths[label])
+    plt.xticks(np.arange(-10., max(widths[label]), 20.))
+    plt.title(label)
+    
 plt.show()
 

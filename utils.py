@@ -4,6 +4,7 @@ import numpy as np
 import sqlite3
 
 def load_faces(s, rgb=True):
+    global X_mean
     '''
     we have three classes: Tobi, Mariam, Reject
     Each class has it's own folder
@@ -14,7 +15,6 @@ def load_faces(s, rgb=True):
     for l in s.labels:
         all_files.append(glob.glob("./faces_120/%s/*.png" % (l)))
 
-    # FIXME: proper split in train/test set
     X_train = None
     X_test = None
     if rgb:
@@ -45,6 +45,7 @@ def load_faces(s, rgb=True):
                 X_train = np.append(X_train, np.array([[img.astype(np.float32)]]), axis=0)
             y_train = np.append(y_train, i)
         print "Got %d files for label %s" % (cnt, s.labels[i])
+
 
     # now, shuffle
     perm = np.arange(X_train.shape[0])

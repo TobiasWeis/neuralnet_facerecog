@@ -9,7 +9,7 @@ class Settings():
         self.net_name = 'facerecognet'
         self.createnet()
 
-    def createnet(self, imgs=21, nf1=16, nf2=16, fs=5):
+    def createnet(self, imgs=51, nf1=32, nf2=32, fs=5):
         self.img_size = imgs
         print "Settings: set image size to: ", imgs
         self.net = NeuralNet(
@@ -42,7 +42,7 @@ class Settings():
             # dropout1
             dropout1_p=0.5,
             # dense
-            dense_num_units=251,
+            dense_num_units=250,
             dense_nonlinearity=lasagne.nonlinearities.rectify,
             # dropout2
             dropout2_p=0.5,
@@ -51,9 +51,9 @@ class Settings():
             output_num_units=4,
             # optimization method params
             update=nesterov_momentum,
-            update_learning_rate=0.01,
+            update_learning_rate=0.02,
             update_momentum=0.8,
-            max_epochs=160,
+            max_epochs=60,
             verbose=1,
             )
 

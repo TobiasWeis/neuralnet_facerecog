@@ -43,41 +43,40 @@ else:
 
 print "# Got the data"
 
-for img_size in [21]:
-    s.createnet(imgs=img_size)
-    net1 = s.net
+s.createnet()
+net1 = s.net
 
-    X_train,y_train,X_test,y_test  = load_faces(s, rgb=False)
+X_train,y_train,X_test,y_test  = load_faces(s, rgb=False)
 
-    if _train:
-        print "# Training"
-        nn = net1.fit(X_train, y_train)
+if _train:
+    print "# Training"
+    nn = net1.fit(X_train, y_train)
 
-        print "# Saving weights"
-        net1.save_weights_to(s.net_name)
-    if _test:
-        print "# Loading weights"
-        net1.load_weights_from(s.net_name)
+    print "# Saving weights"
+    net1.save_weights_to(s.net_name)
+if _test:
+    print "# Loading weights"
+    net1.load_weights_from(s.net_name)
 
-    # evaluate
-    print "# Evaluating"
-    from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
-    predictions = net1.predict(X_test)
+# evaluate
+print "# Evaluating"
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+predictions = net1.predict(X_test)
 
-    ####################### OUTPUT to shell and to file for later
-    filename = "experiment_log.txt"
-    target = open(filename, 'a+')
-    target.write("-------------------------------------------------------------------------\n")
-    from nolearn.lasagne import PrintLayerInfo
-    pli = PrintLayerInfo()
-    net1.verbose = 3
-    layer_info, legend = pli._get_layer_info_conv(net1)
-    target.write(layer_info)
-    target.write(classification_report(y_test, predictions))
-    #target.write(accuracy_score(y_test, predictions))
-    target.close()
+####################### OUTPUT to shell and to file for later
+filename = "experiment_log.txt"
+target = open(filename, 'a+')
+target.write("-------------------------------------------------------------------------\n")
+from nolearn.lasagne import PrintLayerInfo
+pli = PrintLayerInfo()
+net1.verbose = 3
+layer_info, legend = pli._get_layer_info_conv(net1)
+target.write(layer_info)
+target.write(classification_report(y_test, predictions))
+#target.write(accuracy_score(y_test, predictions))
+target.close()
 
-    print layer_info
-    print classification_report(y_test, predictions)
-    accuracy_score(y_test, predictions)
+print layer_info
+print classification_report(y_test, predictions)
+accuracy_score(y_test, predictions)
 
