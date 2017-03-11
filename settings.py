@@ -5,7 +5,7 @@ from lasagne.updates import nesterov_momentum
 
 class Settings():
     def __init__(self):
-        self.labels = ["Tobi", "Mariam", "Other", "Negative"]
+        self.labels = ["Tobi", "Mariam", "AnnaCarina", "Other", "Negative"]
         self.net_name = 'facerecognet'
         self.createnet()
 
@@ -48,7 +48,7 @@ class Settings():
             dropout2_p=0.5,
             # output
             output_nonlinearity=lasagne.nonlinearities.softmax,
-            output_num_units=4,
+            output_num_units=len(self.labels),
             # optimization method params
             update=nesterov_momentum,
             update_learning_rate=0.02,

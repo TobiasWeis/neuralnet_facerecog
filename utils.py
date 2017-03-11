@@ -26,6 +26,12 @@ def load_faces(s, rgb=True):
 
     y_train = np.empty((0), np.int32)# contains labels    
     y_test = np.empty((0), np.int32)# contains labels  
+
+    X_train = []
+    X_test = []
+    y_train = []
+    y_test = []
+    
     
     for i,filelist in enumerate(all_files):
         # first, create array out of all training data
@@ -40,12 +46,17 @@ def load_faces(s, rgb=True):
                 img = cv2.resize(cv2.cvtColor(cv2.imread(f), cv2.COLOR_BGR2GRAY) / 255., (s.img_size, s.img_size))
 
             if rgb:
-                X_train = np.append(X_train, np.array([img.astype(np.float32)]), axis=0)
+                X_train.append(np.array(img.astype(np.float32)))
+                #X_train = np.append(X_train, np.array([img.astype(np.float32)]), axis=0)
             else:
-                X_train = np.append(X_train, np.array([[img.astype(np.float32)]]), axis=0)
-            y_train = np.append(y_train, i)
+                X_train.append(np.array([img.astype(np.float32)]))
+                #X_train = np.append(X_train, np.array([[img.astype(np.float32)]]), axis=0)
+            #y_train = np.append(y_train, i)
+            y_train.append(i)
         print "Got %d files for label %s" % (cnt, s.labels[i])
 
+    X_train = np.array(X_train)
+    y_train = np.array(y_train)
 
     # now, shuffle
     perm = np.arange(X_train.shape[0])
@@ -54,10 +65,10 @@ def load_faces(s, rgb=True):
     y_train = y_train[perm]
 
     # now split
-    X_test = X_train[0.8*X_train.shape[0]:] 
-    y_test = y_train[0.8*y_train.shape[0]:]
-    X_train = X_train[:0.8*X_train.shape[0]]
-    y_train = y_train[:0.8*y_train.shape[0]]
+    X_test = X_train[int(0.8*X_train.shape[0]):] 
+    y_test = y_train[int(0.8*y_train.shape[0]):]
+    X_train = X_train[:int(0.8*X_train.shape[0])]
+    y_train = y_train[:int(0.8*y_train.shape[0])]
 
     # save to disk for later
     np.save("X_train", X_train)
