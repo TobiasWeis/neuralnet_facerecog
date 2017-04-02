@@ -5,7 +5,7 @@ from lasagne.updates import nesterov_momentum
 
 class Settings():
     def __init__(self):
-        self.labels = ["Tobi", "Mariam", "AnnaCarina", "Nida", "Other", "Negative"]
+        self.labels = ["Tobi", "Mariam", "AnnaCarina", "Nida", "Roeser", "Woj", "Other", "Negative"]
         self.net_name = 'facerecognet'
         self.createnet()
 

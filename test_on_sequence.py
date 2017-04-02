@@ -64,7 +64,7 @@ s = Settings()
 cascPath = "./haarcascade_frontalface_alt.xml"
 faceCascade = cv2.CascadeClassifier(cascPath)
 
-files = glob.glob("./sequence/*.png")
+files = glob.glob("./faces_120/complete_pics/*.png")
 files.sort()
 
 net = s.net
@@ -72,12 +72,12 @@ net.load_weights_from(s.net_name)
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-server = ThreadedHTTPServer(('localhost',8080),CamHandler)
+#server = ThreadedHTTPServer(('localhost',8080),CamHandler)
 #from multiprocessing import Process, Array
 #p = Process(target=server.serve_forever)
 from threading import Thread
-p = Thread(target=server.serve_forever)
-p.start()
+#p = Thread(target=server.serve_forever)
+#p.start()
 
 for f in files:
     #print "Opening ", f
@@ -97,19 +97,21 @@ for f in files:
         patch = frame[y:y+h, x:x+w,:]
         # use neural net to classify face
         # transform to right format
-        img = cv2.resize(patch / 255., (s.img_size, s.img_size))
-        img = img.transpose(2,0,1).reshape(3, s.img_size, s.img_size)
+        img = cv2.resize(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY) / 255., (s.img_size, s.img_size))
+        #img = img.transpose(2,0,1).reshape(3, s.img_size, s.img_size)
 
-        pred = net.predict(np.array([img.astype(np.float32)]))
+        pred = net.predict(np.array([[img.astype(np.float32)]]))
 
-        if pred[0] == 0: # Tobi
+        if pred[0] == s.labels.index("Tobi"): # Tobi
             col = (255,0,0)
-        elif pred[0] == 1: # Mariam
+        elif pred[0] == s.labels.index("Mariam"): # Mariam
             col = (255,0,255)
-        elif pred[0] == 2: # Other
+        elif pred[0] == s.labels.index("Other"): # Other
             col = (128,128,128)
-        elif pred[0] == 3:
+        elif pred[0] == s.labels.index("Negative"):
             col = (0,0,255)
+        else:
+            col = (255,255,0)
 
         cv2.rectangle(frame, (x,y), (x+w,y+h),col,2)
         cv2.putText(frame,s.labels[pred[0]],(x,y-10), font, 1,col,2)
@@ -118,5 +120,5 @@ for f in files:
     cv2.imshow("frame", frame)
     cv2.waitKey(10)
 
-p.join()
-server.socket.close()
+#p.join()
+#server.socket.close()
