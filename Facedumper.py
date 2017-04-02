@@ -14,7 +14,7 @@ from lasagne.updates import nesterov_momentum
 from nolearn.lasagne import NeuralNet
 
 import settings
-import settings_hotornot
+#import settings_hotornot
 
 import threading
 import shelve
@@ -25,7 +25,7 @@ class Facedumper(threading.Thread):
         self.stoprequest = threading.Event()
 
         self.last_saved = 0
-        self.delay = .5 # seconds in between saving frames
+        self.delay = 1. # seconds in between saving frames
 
         self.memory = shelve.open("memory", writeback=True)
         self.switch = {}
@@ -39,9 +39,9 @@ class Facedumper(threading.Thread):
         self.net = self.s.net
         self.net.load_weights_from("/home/sarah/scripts/" + self.s.net_name)
 
-        self.s_hotornot = settings_hotornot.Settings()
-        self.net_hotornot = self.s_hotornot.net
-        self.net_hotornot.load_weights_from("/home/sarah/scripts/" + self.s_hotornot.net_name)
+        #self.s_hotornot = settings_hotornot.Settings()
+        #self.net_hotornot = self.s_hotornot.net
+        #self.net_hotornot.load_weights_from("/home/sarah/scripts/" + self.s_hotornot.net_name)
 
         self.outfile = "/var/www/smartmirror2/assets/faceimg.png"
 
@@ -81,6 +81,8 @@ class Facedumper(threading.Thread):
             ret, frame = self.video_capture.read()
         '''
 
+    def keypress(self, key):
+        os.system("xdotool key %s" % key)
 
 
     def __del__(self):
@@ -117,17 +119,14 @@ class Facedumper(threading.Thread):
                         flags=cv2.cv.CV_HAAR_SCALE_IMAGE
                     )
 
-                    for (x, y, w, h) in faces:
-                        # first, save patches to file
-                        d = datetime.now()
-                        patch = frame[y:y+h, x:x+w,:]
-                        cv2.imwrite("%s/face_%d%02d%02d-%02d%02d%02d%03d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, d.microsecond/1000, (x + w/2), (y + h/2), w, h), patch)
-                        cv2.imwrite("%s/complete_%d%02d%02d-%02d%02d%02d%03d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, d.microsecond/1000, (x + w/2), (y + h/2), w, h), frame)
-                        self.last_saved = time.time()
+                    orig_frame = frame.copy()
 
                     # now draw the boxes for visualization
                     for (x, y, w, h) in faces:
-                        patch = frame[y:y+h, x:x+w,:]
+                        d = datetime.now()
+                        self.last_saved = time.time()
+
+                        patch = orig_frame[y:y+h, x:x+w,:]
                         # classify, draw rectangle with name,
                         # save to file for the smartmirror to display it
                         if self.s.net.input_shape[1] == 3:
@@ -137,7 +136,7 @@ class Facedumper(threading.Thread):
                         else:
                             img = cv2.resize(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY) / 255., (self.s.img_size, self.s.img_size))
                             pred = self.net.predict(np.array([[img.astype(np.float32)]]))
-                            pred_hotornot = self.net_hotornot.predict(np.array([[img.astype(np.float32)]]))
+                            #pred_hotornot = self.net_hotornot.predict(np.array([[img.astype(np.float32)]]))
 
 
                         # check if there went some time by since we last saw that person.
@@ -156,14 +155,20 @@ class Facedumper(threading.Thread):
                             self.memory[self.s.labels[pred[0]]]["lastseen"] = time.time()
                         self.memory.sync()
 
-                        if pred[0] == 0: # Tobi
+                        if pred[0] == self.s.labels.index("Tobi"): # Tobi
                             col = (255,0,0)
-                        elif pred[0] == 1: # Mariam
+                        elif pred[0] == self.s.labels.index("Mariam"): # Mariam
                             col = (255,0,255)
-                        elif pred[0] == 2: # Other
+                        elif pred[0] == self.s.labels.index("Other"): # Other
                             col = (128,128,128)
-                        elif pred[0] == 3:
+                        elif pred[0] == self.s.labels.index("AnnaCarina"):
+                            col = (255,255,128)
+                        elif pred[0] == self.s.labels.index("Nida"):
+                            col = (255,255,0)
+                        elif pred[0] == self.s.labels.index("Negative"):
                             col = (0,0,255)                                                                                            
+                        else:
+                            col = (0,255,255)
                         font = cv2.FONT_HERSHEY_SIMPLEX
                         cv2.rectangle(frame, (x,y), (x+w,y+h),col,4)
                         cv2.putText(frame,self.s.labels[pred[0]],(x,y-10), font, 1,col,3)
@@ -173,9 +178,16 @@ class Facedumper(threading.Thread):
                             if time.time() - self.switch[self.s.labels[pred[0]]] < 10:
                                 cv2.putText(frame, "LONG TIME NO SEE, %s" % (self.s.labels[pred[0]]),(10,50), font, 1, col,3)
 
-                        if pred_hotornot[0] == 0: #Hot
-                            cv2.putText(frame,self.s_notornet.labels[pred_hotornot[0]],(x,y-20), font, 1, (0,200,200),3)
-                            cv2.rectangle(frame, (x-10,y-10), (x+w+10,y+h+10),(0,200,200),8)
+
+                        # only save the image if the prediction was not "negative"
+                        if pred[0] != 3:
+                            cv2.imwrite("%s/complete_%d%02d%02d-%02d%02d%02d%03d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, d.microsecond/1000, (x + w/2), (y + h/2), w, h), orig_frame)
+
+                            cv2.imwrite("%s/face_%d%02d%02d-%02d%02d%02d%03d_xc%d_yc%d_w%d_h%d.png" % (self.folder, d.year, d.month, d.day, d.hour, d.minute, d.second, d.microsecond/1000, (x + w/2), (y + h/2), w, h), patch)
+
+                        #if pred_hotornot[0] == 0: #Hot
+                        #    cv2.putText(frame,self.s_notornet.labels[pred_hotornot[0]],(x,y-20), font, 1, (0,200,200),3)
+                        #    cv2.rectangle(frame, (x-10,y-10), (x+w+10,y+h+10),(0,200,200),8)
 
 
                         cv2.imwrite(self.outfile, frame)
