@@ -12,6 +12,7 @@ import lasagne
 from lasagne import layers
 from lasagne.updates import nesterov_momentum
 from nolearn.lasagne import NeuralNet
+import random
 
 import settings
 #import settings_hotornot
@@ -146,7 +147,46 @@ class Facedumper(threading.Thread):
                             print "Had key: ", self.s.labels[pred[0]]
                             print "Allkeys: ", self.memory.keys()
 
-                            if time.time() - self.memory[self.s.labels[pred[0]]]["lastseen"] > 5*60:
+                            if time.time() - self.memory[self.s.labels[pred[0]]]["lastseen"] > 4*60*60 and self.s.labels[pred[0]] != "Negative":
+                                # tageszeit
+                                this_hour = int(time.strftime("%H"))
+                                # FIXME: move to another file
+                                name = self.s.labels[pred[0]]
+                                greets_morning = [
+                                            "Good morning, %s." % name,
+                                            "Have a wonderful day, %s" % name,
+                                            "You look beautiful today, %s" % name,
+                                            "Hope you slept well, %s" % name
+                                        ]
+                                greets_day = [
+                                            "Hello, %s" % name,
+                                            "Not at work, %s?" % name
+                                        ]
+
+                                greets_evening = [
+                                            "Evening, %s" % name,
+                                            "Back from work, %s?" % name,
+                                            "Hope you had a nice day, %s" % name
+                                        ]
+
+                                greets_night = [
+                                            "Still awake, %s?" % name,
+                                            "It's time for bed, %s" % name,
+                                            "Is there a party going on, %s?" % name
+                                        ]
+
+                                greeting = "Hello %s, nice to see you again" % self.s.labels[pred[0]]
+                                if this_hour > 4 and this_hour < 12:
+                                    greeting = greets_morning[random.randint(0,len(greets_morning))]
+                                elif this_hour >= 12 and this_hour < 18:
+                                    greeting = greets_day[random.randint(0,len(greets_day))]
+                                elif this_hour >= 18 and this_hour < 23:
+                                    greeting = greets_day[random.randint(0,len(greets_evening))]
+                                else:
+                                    greeting = greets_night[random.randint(0,len(greets_night))]
+                                    
+                                os.system("echo \"%s\" | festival --tts &" % greeting)
+                                #os.system("echo \"Hello %s , nice to see you again.\" | festival --tts &" % self.s.labels[pred[0]])
                                 self.switch[self.s.labels[pred[0]]] = time.time()
                             # save the last-seen timestamp for this person
                             self.memory[self.s.labels[pred[0]]]["lastseen"] = time.time()
@@ -177,7 +217,6 @@ class Facedumper(threading.Thread):
                         if self.switch.has_key(self.s.labels[pred[0]]):
                             if time.time() - self.switch[self.s.labels[pred[0]]] < 10:
                                 cv2.putText(frame, "LONG TIME NO SEE, %s" % (self.s.labels[pred[0]]),(10,50), font, 1, col,3)
-
 
                         # only save the image if the prediction was not "negative"
                         if pred[0] != 3:
